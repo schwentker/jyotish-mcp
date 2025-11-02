@@ -95,17 +95,19 @@ SwissEphException: ephemeris file not found
 mkdir -p calculations/ephemeris_data
 cd calculations/ephemeris_data
 
-# Download required files (takes a few minutes)
-wget ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1
+# Download required files (using HTTPS - faster than FTP)
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
 ```
 
 Or use curl if wget not available:
 ```bash
-curl -O ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1
-curl -O ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1
-curl -O ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1
+curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1
+curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
 ```
 
 **Verify files exist:**
@@ -116,6 +118,42 @@ ls -lh calculations/ephemeris_data/*.se1
 ---
 
 ## MCP Server Issues
+
+### MCP Server Not Finding Python Scripts
+
+**Symptom:**
+```
+Error in logs: can't open file '//calculations/chart_calculator.py'
+Python: can't open file: [Errno 2] No such file or directory
+```
+
+**Cause:** Path resolution issue in MCP server
+
+**Solution:**
+1. Verify calculation scripts exist:
+   ```bash
+   ls -la calculations/*.py
+   ```
+
+2. Check MCP server logs:
+   ```bash
+   tail -f ~/Library/Logs/Claude/mcp*.log
+   ```
+
+3. Test Python scripts directly:
+   ```bash
+   cd calculations
+   source venv/bin/activate
+   python chart_calculator.py '{"datetime":"1990-06-15T14:30:00Z","latitude":40.7128,"longitude":-74.0060,"timezone":"America/New_York","action":"create"}'
+   ```
+
+4. Rebuild MCP server:
+   ```bash
+   cd mcp-server
+   npm run build
+   ```
+
+**Note:** The latest version uses proper path resolution from the script location, not `process.cwd()`.
 
 ### Claude Desktop doesn't see MCP server
 
@@ -162,15 +200,18 @@ node dist/index.js
 
 ### MCP server not building
 
-**Error:** `Cannot find module '@modelcontextprotocol/sdk'`
+**Error:** `Cannot find module '@modelcontextprotocol/sdk'` or peer dependency warnings
 
 **Solution:**
 ```bash
 cd mcp-server
 rm -rf node_modules package-lock.json
-npm install
+npm install --legacy-peer-deps
 npm run build
 ```
+
+**Why `--legacy-peer-deps`?** 
+Some MCP SDK dependencies may have peer dependency conflicts. This flag allows npm to proceed with installation despite warnings.
 
 ---
 
