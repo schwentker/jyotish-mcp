@@ -19,13 +19,27 @@ NC='\033[0m' # No Color
 # Check prerequisites
 echo "Checking prerequisites..."
 
-# Python
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ Python 3 not found. Please install Python 3.11+${NC}"
+# Python 3.12 (required, not 3.13)
+PYTHON_CMD=""
+if command -v python3.12 &> /dev/null; then
+    PYTHON_CMD="python3.12"
+elif command -v /opt/homebrew/bin/python3.12 &> /dev/null; then
+    PYTHON_CMD="/opt/homebrew/bin/python3.12"
+elif command -v python3 &> /dev/null; then
+    PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1-2)
+    if [ "$PYTHON_VERSION" = "3.12" ]; then
+        PYTHON_CMD="python3"
+    else
+        echo -e "${YELLOW}⚠ Python 3.12 required (found $PYTHON_VERSION). Python 3.13 not yet compatible.${NC}"
+        echo -e "${YELLOW}Install with: brew install python@3.12${NC}"
+        exit 1
+    fi
+else
+    echo -e "${RED}❌ Python 3.12 not found. Please install Python 3.12${NC}"
+    echo -e "${YELLOW}Install with: brew install python@3.12${NC}"
     exit 1
 fi
-PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1-2)
-echo -e "${GREEN}✓ Python $PYTHON_VERSION found${NC}"
+echo -e "${GREEN}✓ Python 3.12 found: $PYTHON_CMD${NC}"
 
 # Node.js
 if ! command -v node &> /dev/null; then
@@ -38,9 +52,13 @@ echo -e "${GREEN}✓ Node.js $NODE_VERSION found${NC}"
 # PostgreSQL
 if ! command -v psql &> /dev/null; then
     echo -e "${YELLOW}⚠ PostgreSQL not found. Install it later for data persistence.${NC}"
+    echo -e "${YELLOW}Install with: brew install postgresql@14${NC}"
 else
-    PG_VERSION=$(psql --version | cut -d' ' -f3)
+    PG_VERSION=$(psql --version | cut -d' ' -f3 | cut -d'.' -f1)
     echo -e "${GREEN}✓ PostgreSQL $PG_VERSION found${NC}"
+    if [ "$PG_VERSION" -lt "14" ]; then
+        echo -e "${YELLOW}⚠ PostgreSQL 14+ recommended${NC}"
+    fi
 fi
 
 echo ""
@@ -52,8 +70,8 @@ cd calculations
 
 # Create virtual environment
 if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv venv
+    echo "Creating virtual environment with Python 3.12..."
+    $PYTHON_CMD -m venv venv
     echo -e "${GREEN}✓ Virtual environment created${NC}"
 else
     echo -e "${GREEN}✓ Virtual environment already exists${NC}"

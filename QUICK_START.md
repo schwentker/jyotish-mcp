@@ -9,17 +9,33 @@ Get the Jyotish MCP server running in 15 minutes.
 Install these first:
 
 ```bash
-# Python 3.11+
+# Python 3.12 (REQUIRED - not 3.13 due to pydantic-core compatibility)
 python3 --version
 
 # Node.js 18+
 node --version
 
-# PostgreSQL 15+
+# PostgreSQL 14+ (via Homebrew on macOS)
 psql --version
 
 # Git
 git --version
+```
+
+### macOS Installation
+
+```bash
+# Install Python 3.12 (3.13 not yet compatible with all dependencies)
+brew install python@3.12
+
+# Install PostgreSQL 14
+brew install postgresql@14
+
+# Start PostgreSQL service
+brew services start postgresql@14
+
+# Install Node.js (if not already installed)
+brew install node
 ```
 
 ---
@@ -38,9 +54,16 @@ cd jyotish-mcp
 ```bash
 cd calculations
 
-# Create virtual environment
-python3 -m venv venv
+# Create virtual environment with Python 3.12
+# macOS with Homebrew:
+/opt/homebrew/bin/python3.12 -m venv venv
+# Linux:
+# python3.12 -m venv venv
+
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Upgrade pip
+pip install --upgrade pip
 
 # Install dependencies
 pip install -r requirements.txt

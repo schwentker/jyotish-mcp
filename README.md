@@ -150,8 +150,15 @@ Vedic astrology's mathematical precision (planetary positions, timing systems, h
 ### What You'll Need
 
 1. **Claude Desktop App** with Claude Pro subscription (for MCP support)
-2. **Python 3.11+** installed on your computer
-3. **10 minutes** for setup
+2. **Python 3.12** installed on your computer (not 3.13 - compatibility issues)
+3. **PostgreSQL 14+** for data storage
+4. **10 minutes** for setup
+
+**macOS Quick Install:**
+```bash
+brew install python@3.12 postgresql@14 node
+brew services start postgresql@14
+```
 
 ### Installation
 
