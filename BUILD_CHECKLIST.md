@@ -18,7 +18,7 @@ Quick reference for building and running Jyotish MCP.
 
 ### Phase 1: MCP Server Setup
 
-- [ ] Install Node dependencies: `cd mcp-server && npm install`
+- [ ] Install Node dependencies: `cd mcp-server && npm install --legacy-peer-deps`
 - [ ] Build TypeScript: `npm run build`
 - [ ] Verify build: `ls dist/index.js`
 
@@ -30,9 +30,10 @@ Quick reference for building and running Jyotish MCP.
 
 ### Phase 3: Ephemeris Data
 
-- [ ] Download sepl_18.se1 (planetary ephemeris)
-- [ ] Download semo_18.se1 (moon ephemeris)
-- [ ] Download seas_18.se1 (asteroid ephemeris)
+- [ ] Download sepl_18.se1 (planetary ephemeris) via HTTPS
+- [ ] Download semo_18.se1 (moon ephemeris) via HTTPS
+- [ ] Download seas_18.se1 (asteroid ephemeris) via HTTPS
+- [ ] Download sefstars.txt (fixed stars) via HTTPS
 - [ ] Verify files in: `calculations/ephemeris_data/`
 
 ### Phase 4: Claude Integration
@@ -47,7 +48,7 @@ Quick reference for building and running Jyotish MCP.
 
 - [ ] Review changes: `git status`
 - [ ] Push updates: `git push origin main`
-- [ ] Verify on GitHub: https://github.com/schwentker/jyotish-mcp
+- [ ] Verify on GitHub: https://github.com/YOUR_USERNAME/jyotish-mcp
 
 ---
 
@@ -86,7 +87,7 @@ After MCP server works, build calculation engine:
 
 ```bash
 # Build MCP server
-cd mcp-server && npm install && npm run build
+cd mcp-server && npm install --legacy-peer-deps && npm run build
 
 # Start PostgreSQL
 brew services start postgresql@14
@@ -95,9 +96,10 @@ brew services start postgresql@14
 createdb jyotish
 
 # Download ephemeris (in calculations/ephemeris_data/)
-wget ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
 
 # Test MCP server
 node mcp-server/dist/index.js

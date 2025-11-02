@@ -8,8 +8,14 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "child_process";
-import { promisify } from "util";
+import { existsSync } from "fs";
 import { z } from "zod";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+// Get current file's directory - works regardless of where repo is cloned
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Schema definitions for tool parameters
 const BirthDataSchema = z.object({
@@ -190,15 +196,42 @@ const TOOLS: Tool[] = [
 ];
 
 // Helper function to call Python calculation engine
+// FIXED: No hardcoded paths - works for any clone location
 async function callPythonCalculator(
   scriptName: string,
   args: Record<string, any>
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    const python = spawn("/Users/schwentker/dev/sblai/jyotish-mcp/calculations/venv/bin/python", [
-      `/Users/schwentker/dev/sblai/jyotish-mcp/calculations/${scriptName}.py`,
-      JSON.stringify(args),
-    ]);
+    // Dynamic path resolution - works regardless of repo location
+    // From: mcp-server/dist/index.js
+    // To:   calculations/
+    const calculationsPath = join(__dirname, "..", "..", "calculations");
+    const scriptPath = join(calculationsPath, `${scriptName}.py`);
+    
+    // Check for venv Python first, fallback to system python3
+    // This ensures the script works even if venv isn't set up yet
+    const venvPython = join(calculationsPath, "venv", "bin", "python");
+    const systemPython = "python3";
+    const pythonPath = existsSync(venvPython) ? venvPython : systemPython;
+    
+    // Verify the Python script exists before trying to run it
+    if (!existsSync(scriptPath)) {
+      reject(new Error(
+        `Python script not found: ${scriptPath}\n` +
+        `Make sure you're running from the correct directory and ` +
+        `the calculations folder exists.`
+      ));
+      return;
+    }
+    
+    // Log for debugging (goes to stderr, not to Claude)
+    console.error(`[Jyotish MCP] Calling: ${pythonPath} ${scriptPath}`);
+    console.error(`[Jyotish MCP] CWD: ${calculationsPath}`);
+    
+    const python = spawn(pythonPath, [scriptPath, JSON.stringify(args)], {
+      cwd: calculationsPath,
+      env: { ...process.env }
+    });
 
     let stdout = "";
     let stderr = "";
@@ -213,15 +246,32 @@ async function callPythonCalculator(
 
     python.on("close", (code) => {
       if (code !== 0) {
-        reject(new Error(`Python script failed: ${stderr}`));
+        reject(new Error(
+          `Python script failed with code ${code}:\n${stderr}\n\n` +
+          `Script: ${scriptPath}\n` +
+          `Python: ${pythonPath}\n` +
+          `Args: ${JSON.stringify(args)}`
+        ));
       } else {
         try {
           const result = JSON.parse(stdout);
           resolve(result);
         } catch (e) {
-          reject(new Error(`Failed to parse Python output: ${stdout}`));
+          reject(new Error(
+            `Failed to parse Python output as JSON:\n${stdout}\n\n` +
+            `Parse error: ${e instanceof Error ? e.message : String(e)}`
+          ));
         }
       }
+    });
+    
+    python.on("error", (err) => {
+      reject(new Error(
+        `Failed to spawn Python process:\n${err.message}\n\n` +
+        `Tried to run: ${pythonPath}\n` +
+        `Make sure Python 3.x is installed and in your PATH.\n` +
+        `You can install dependencies with: cd calculations && pip install -r requirements.txt`
+      ));
     });
   });
 }
@@ -368,7 +418,7 @@ async function main() {
   const server = new Server(
     {
       name: "jyotish-mcp-server",
-      version: "0.1.0",
+      version: "0.5.0",
     },
     {
       capabilities: {
@@ -423,10 +473,11 @@ async function main() {
   // Start server
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Jyotish MCP Server running on stdio");
+  console.error("Jyotish MCP Server v0.5.0 running on stdio");
+  console.error("Repository-relative paths configured - works for any clone location");
 }
 
 main().catch((error) => {
-  console.error("Fatal error:", error);
+  console.error("Fatal error in Jyotish MCP Server:", error);
   process.exit(1);
 });

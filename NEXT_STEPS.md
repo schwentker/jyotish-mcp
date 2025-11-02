@@ -22,8 +22,8 @@ You've successfully set up Python 3.12 and PostgreSQL 14. Here's what to do next
 ```bash
 cd mcp-server
 
-# Install dependencies
-npm install
+# Install dependencies (use --legacy-peer-deps for compatibility)
+npm install --legacy-peer-deps
 
 # Build TypeScript
 npm run build
@@ -50,15 +50,18 @@ psql -d jyotish -c "SELECT version();"
 ```bash
 cd calculations/ephemeris_data
 
-# Download ephemeris files (~100MB total)
-wget ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1  
-wget ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1
+# Download ephemeris files (~2MB total, covers 1800-2399 AD)
+# Using HTTPS (faster and more reliable than FTP)
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1  
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
 
 # Or use curl if wget not available:
-# curl -O ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1
-# curl -O ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1
-# curl -O ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
 
 cd ../..
 ```
@@ -82,7 +85,8 @@ node dist/index.js
 pwd
 
 # Should show something like:
-# /Users/schwentker/jyotish-mcp
+# /Users/YOUR_USERNAME/jyotish-mcp
+# or /home/YOUR_USERNAME/jyotish-mcp
 ```
 
 **Edit Claude Desktop config:**
@@ -102,17 +106,17 @@ nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
   "mcpServers": {
     "jyotish": {
       "command": "node",
-      "args": ["/Users/schwentker/jyotish-mcp/mcp-server/dist/index.js"],
+      "args": ["/ABSOLUTE/PATH/TO/jyotish-mcp/mcp-server/dist/index.js"],
       "env": {
         "DATABASE_URL": "postgresql://localhost/jyotish",
-        "EPHEMERIS_PATH": "/Users/schwentker/jyotish-mcp/calculations/ephemeris_data"
+        "EPHEMERIS_PATH": "/ABSOLUTE/PATH/TO/jyotish-mcp/calculations/ephemeris_data"
       }
     }
   }
 }
 ```
 
-**Important:** Use YOUR actual absolute paths, not the example above!
+**Important:** Replace `/ABSOLUTE/PATH/TO/` with your actual project path from `pwd` above!
 
 ### 6. Restart Claude Desktop
 

@@ -68,12 +68,21 @@ pip install --upgrade pip
 # Install dependencies
 pip install -r requirements.txt
 
-# Download Swiss Ephemeris data files
+# Download ephemeris files (~2MB total, covers 1800-2399 AD)
 mkdir -p ephemeris_data
 cd ephemeris_data
-wget ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1
-wget ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1
+
+# Use HTTPS (faster and more reliable than FTP)
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+wget https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
+
+# Or use curl if wget not available:
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1
+# curl -LO https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt
 cd ..
 ```
 
