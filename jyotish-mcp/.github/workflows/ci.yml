@@ -1,109 +1,113 @@
+---
 name: CI
 
-on:
+on:  # yamllint disable-line rule:truthy
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test-python:
     name: Test Python Calculations
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Cache pip packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('calculations/requirements.txt') }}
-    
-    - name: Install dependencies
-      run: |
-        cd calculations
-        pip install -r requirements.txt
-    
-    - name: Download Swiss Ephemeris files
-      run: |
-        mkdir -p calculations/ephemeris_data
-        cd calculations/ephemeris_data
-        wget -q ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1 || true
-        wget -q ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1 || true
-        wget -q ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1 || true
-    
-    - name: Lint with ruff
-      run: |
-        cd calculations
-        ruff check . || true  # Don't fail on lint warnings initially
-    
-    - name: Format check with black
-      run: |
-        cd calculations
-        black --check . || true  # Don't fail on format initially
-    
-    - name: Type check with mypy
-      run: |
-        cd calculations
-        mypy . || true  # Don't fail on type errors initially
-    
-    - name: Run tests
-      run: |
-        cd calculations
-        pytest -v --cov=. --cov-report=xml --cov-report=html
-    
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./calculations/coverage.xml
-        flags: python
-        name: python-coverage
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: >-
+            ${{ runner.os }}-pip-${{
+              hashFiles('calculations/requirements.txt')
+            }}
+
+      - name: Install dependencies
+        run: |
+          cd calculations
+          pip install -r requirements.txt
+
+      - name: Download Swiss Ephemeris files
+        run: |
+          mkdir -p calculations/ephemeris_data
+          cd calculations/ephemeris_data
+          wget -q ftp://ftp.astro.com/pub/swisseph/ephe/sepl_18.se1 || true
+          wget -q ftp://ftp.astro.com/pub/swisseph/ephe/semo_18.se1 || true
+          wget -q ftp://ftp.astro.com/pub/swisseph/ephe/seas_18.se1 || true
+
+      - name: Lint with ruff
+        run: |
+          cd calculations
+          ruff check . || true
+
+      - name: Format check with black
+        run: |
+          cd calculations
+          black --check . || true
+
+      - name: Type check with mypy
+        run: |
+          cd calculations
+          mypy . || true
+
+      - name: Run full test pipeline
+        run: |
+          chmod +x scripts/test_all.sh
+          bash scripts/test_all.sh
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./calculations/coverage.xml
+          flags: python
+          name: python-coverage
 
   test-typescript:
     name: Test MCP Server
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: mcp-server/package-lock.json
-    
-    - name: Install dependencies
-      run: |
-        cd mcp-server
-        npm ci
-    
-    - name: Lint
-      run: |
-        cd mcp-server
-        npm run lint || true  # Don't fail initially
-    
-    - name: Build
-      run: |
-        cd mcp-server
-        npm run build
-    
-    - name: Run tests
-      run: |
-        cd mcp-server
-        npm test || true  # Tests TBD
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: true
+          cache-dependency-path: mcp-server/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd mcp-server
+          npm ci
+
+      - name: Lint
+        run: |
+          cd mcp-server
+          npm run lint || true
+
+      - name: Build
+        run: |
+          cd mcp-server
+          npm run build
+
+      - name: Run tests
+        run: |
+          cd mcp-server
+          npm test || true
 
   integration-test:
     name: Integration Test
     runs-on: ubuntu-latest
     needs: [test-python, test-typescript]
-    
+
     services:
       postgres:
         image: postgres:15
@@ -117,34 +121,35 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-    
-    - name: Install Python dependencies
-      run: |
-        cd calculations
-        pip install -r requirements.txt
-    
-    - name: Install Node dependencies
-      run: |
-        cd mcp-server
-        npm ci
-        npm run build
-    
-    - name: Run integration tests
-      env:
-        DATABASE_URL: postgresql://postgres:test_password@localhost:5432/jyotish_test
-      run: |
-        echo "Integration tests will be added here"
-        # python tests/integration/test_full_flow.py
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install Python dependencies
+        run: |
+          cd calculations
+          pip install -r requirements.txt
+
+      - name: Install Node dependencies
+        run: |
+          cd mcp-server
+          npm ci
+          npm run build
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: >-
+            postgresql://postgres:test_password@localhost:5432/jyotish_test
+        run: |
+          echo "Integration tests will be added here"
+          # python tests/integration/test_full_flow.py
